@@ -1,0 +1,54 @@
+{%extends "base.jinja2"%}
+
+{%block title%}About{%endblock%}
+
+{%block body%}
+  {%include "header.jinja2"%}
+
+  <div class="container">
+
+    <div class="page-header">
+      <h1>About</h1>
+    </div>
+    
+    <h2>About AbacusSummit</h2>
+    <p>
+    All documentation pertaining to AbacusSummit is hosted on ReadTheDocs here:
+    <a href="https://abacussummit.readthedocs.io/">abacussummit.readthedocs.io <i class="fas fa-external-link-alt"></i></a>
+    
+    <h2>About This Portal</h2>
+    <p>
+    This portal was implemented by
+    <a href="https://lgarrison.github.io">Lehman Garrison <i class="fas fa-external-link-alt"></i></a>,
+    using the
+    <a href="https://docs.globus.org/modern-research-data-portal/">Globus Modern Research Data Portal (MRDP) <i class="fas fa-external-link-alt"></i></a>
+    design pattern.
+    
+    <p>
+    The source code for this portal is available on GitHub: TODO.
+    Please file an issue there for a problem with the web interface; for problems with the suite or code, please file an issue in the AbacusSummit or abacusutils repositories.
+    
+    <h3>Acknowledgements</h3>
+    <p>
+    This portal is hosted on
+    <a href="https://www.nersc.gov/systems/spin/">NERSC's Spin platform <i class="fas fa-external-link-alt"></i></a>,
+    and the data is hosted on
+    <a href="https://docs.nersc.gov/filesystems/community/">NERSC's Community File System <i class="fas fa-external-link-alt"></i></a>
+    under a
+    <a href="https://www.desi.lbl.gov/">DESI <i class="fas fa-external-link-alt"></i></a>
+    allocation. We are grateful to NERSC and DESI for providing the opportunity to share this data publicly.
+    
+    <p>
+    Some of the design was inspired by the
+    <a href="https://lsstdesc-portal.nersc.gov/">LSSTDESC Data Portal <i class="fas fa-external-link-alt"></i></a>
+    and the
+    <a href="https://cosmology.alcf.anl.gov/">HACC Simulation Data Portal <i class="fas fa-external-link-alt"></i></a>,
+    both of which also use the MRDP pattern.  Some code from the former is also used under the BSD 3-Clause License.
+    
+    <p>
+    The authors would like to thank Eli Dart at ESnet and Debbie Bard at NERSC for their support; and
+    <a href="https://www.flatironinstitute.org">Flatiron Institute <i class="fas fa-external-link-alt"></i></a>
+    for providing a Docker platform for prototyping.
+
+  </div> <!-- container -->
+{%endblock%}

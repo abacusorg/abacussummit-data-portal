@@ -1,0 +1,219 @@
+<script type="text/javascript">
+    
+function format_exp(val,prec) {
+    var exp = Math.trunc(Math.log10(val));
+    var sig = (val * (Math.pow(10,-exp))).toFixed(prec);
+    return sig.toString() + ' × 10<sup>' + exp.toString() + '</sup>';
+}
+
+var manifest;
+var simtable;
+
+// Navigation Scripts to Show Header on Scroll-Up
+jQuery(document).ready(function($) {
+  var MQL = 1170;
+
+  //primary navigation slide-in effect
+  if ($(window).width() > MQL) {
+    var headerHeight = $('.navbar-custom').height();
+    $(window).on('scroll', {previousTop: 0},
+      function() {
+        var currentTop = $(window).scrollTop();
+        //check if user is scrolling up
+        if (currentTop < this.previousTop) {
+          //if scrolling up...
+          if (currentTop > 0 && $('.navbar-custom').hasClass('is-fixed')) {
+            $('.navbar-custom').addClass('is-visible');
+          } else {
+            $('.navbar-custom').removeClass('is-visible is-fixed');
+          }
+        } else {
+          //if scrolling down...
+          $('.navbar-custom').removeClass('is-visible');
+          if (currentTop > headerHeight && !$('.navbar-custom').hasClass('is-fixed')) $('.navbar-custom').addClass('is-fixed');
+        }
+        this.previousTop = currentTop;
+      });
+    }
+    
+    $.ajax({
+        'url': "{{dataset_uri}}",
+        'method': "GET",
+        'contentType': 'application/json'
+    }).done( function (_manifest) {
+        manifest = _manifest;
+        
+        // DataTable config
+        simtable = $('#simulations').DataTable( {
+          "data": manifest.data,
+          "rowId": "id",
+          "columns": [
+                { "data": "id" },
+                { "data": "name" },
+                { "data": "header.PPD",
+                  render: function ( data, type, row ) {
+                      return data + '<sup>3</sup>';
+                    }
+                },
+                { "data": "header.BoxSize",
+                  render: function ( data, type, row ) {
+                      if(type === 'display' || type === 'filter'){
+                          return data + ' Mpc/<i>h</i>';
+
+                      }
+                      return data;
+                  }
+                },
+                { "data": "header.ParticleMassHMsun",
+                  render: function ( data, type, row ) {
+                      if(type === 'display' || type === 'filter'){
+                          return format_exp(data, 1) + ' M<sub>⊙</sub>/<i>h</i>';
+
+                      }
+                      return data;
+                  }
+                },
+                { "data": "header.SimComment" },
+            ],
+            "columnDefs": [
+                { checkboxes: {
+                    selectRow: true,
+                    selectAllRender: '<div class="checkbox"><input type="checkbox" class="dt-checkboxes"><label></label></div>'
+                    },
+                    targets: 0,
+                    'render': function(data, type, row, meta){
+                        if(type === 'display'){
+                            data = '<div class="checkbox"><input type="checkbox" class="dt-checkboxes"><label></label></div>';
+                        }
+                        return data;
+                    },
+                },
+                { className: "col1", "targets": [ 1 ] },
+                { className: "col2 dt-body-right", "targets": [ 2 ] },
+                { className: "col3 dt-body-right", "targets": [ 3 ] },
+                { className: "col4 dt-body-right", "targets": [ 4 ] },
+                { className: "col5", "targets": [ 5 ] },
+              ],
+          "paging":   false,
+          "dom": "lfritp",
+          "language": {
+              "info": "Showing _END_ entries",
+          },
+          searchHighlight: true,
+          select: {
+                style:    'multi+shift',
+                // selector: 'td:first-child'
+            },
+          "order": [],
+        } );
+        
+        // Register table callbacks
+        simtable.on('select', update_transfer_size);
+        simtable.on('deselect', update_transfer_size);
+        
+        // Register products callbacks
+        $(".products-checkbox-list .checkbox input").change(function() {
+            console.log('checked:', this.checked);
+            update_transfer_size();
+        });
+        
+        // Register redshift callbacks
+        $('#redshift-selector').on('change', function (e) {
+            update_transfer_size();
+        });
+        
+        // Hook up the form button
+        $('#download-form').on('submit', function(e){
+            var $form = $(this);
+            var simsel = simtable.rows('.selected').ids();
+            var simids = [];
+            simsel.each(function (simidx){
+                simids.push(simidx);
+            });
+            var input = $("<input>").attr({"type":"hidden","name":"simids[]"}).val(simids);
+            $form.append(input);
+        });
+        
+        update_transfer_size();
+    });
+
+    // Redshift selector config
+    $('#redshift-selector').select2({ dropdownCssClass: "redshift-font" });
+    
+});
+
+function set_transfer_btn_state(nfiles,size){
+    var btn = $('#transfer-btn');
+    
+    if(nfiles == 0){
+        btn.prop('disabled',true);
+        btn.html('Transfer<br>(make a selection)')
+        return;
+    }
+    btn.prop('disabled',false);
+    
+    var txt = 'Transfer<br>(';
+    if(size >= 1e12){
+        txt += (size/1e12).toFixed(2) + ' TB';
+    }
+    else if (size >= 1e9){
+        txt += (size/1e9).toFixed(2) + ' GB';
+    }
+    else {
+        txt += (size/1e6).toFixed(2) + ' MB';
+    }
+    
+    txt += ', ' + nfiles + ' files)';
+    btn.html(txt);
+}
+
+function update_transfer_size(){
+    console.log('Updating transfer size...');
+    
+    // Look at the selected simulations, redshifts, and products, and compute the total size
+    var redshifts = $('#redshift-selector');
+    var products = $('#products-selector');
+    
+    var zsel = redshifts.select2('data');    
+    var simsel = simtable.rows('.selected').ids();
+    var prodsel = $('.products-checkbox-list .checkbox input:checked').map(function() {
+        var sp = this.value.split(',');  // "cleaning.cleaned_halo_info,cleaning.cleaned_rvpid"
+        var res = sp.filter(s => s);
+        return res;
+    });
+    // prodsel = prodsel => [].concat(...prodsel);  // ["cleaning.cleaned_halo_info",'cleaning.cleaned_rvpid']
+
+    var size = 0;
+    var nfiles = 0;
+    
+    simsel.each(function (simidx){
+        for (const ftypekey of prodsel){
+            var key = ftypekey.split('.');  // "halos.halo_info"
+            var product_category = key[0];  // "halos"
+            var ftype = key[1];  // "halo_info"
+            
+            if (!(product_category in manifest.data[simidx])){
+                continue;
+            }
+            
+            for (const z of zsel) {
+                if (!(z.id in manifest.data[simidx][product_category])){
+                    continue;
+                }
+                var zinfo = manifest.data[simidx][product_category][z.id];
+            
+                if (!(ftype in zinfo)){
+                    continue;
+                }
+                var du = zinfo[ftype];
+                nfiles += du[0];
+                size += du[1];
+            }
+        }
+    });
+    
+    console.log('Files, size:',nfiles,size);
+    set_transfer_btn_state(nfiles,size);
+}
+
+</script>

@@ -1,0 +1,2 @@
+Flask~=2.0.1
+globus-sdk~=2.0.1

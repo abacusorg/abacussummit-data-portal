@@ -1,0 +1,93 @@
+{%extends "base.jinja2"%}
+
+{%block title%}Transfer{%endblock%}
+
+{%block body%}
+  {%include "header.jinja2"%}
+
+  <div class="container">
+
+    <div class="page-header">
+      <h1>Download</h1>
+    </div>
+
+    <p>
+      Select the data products and simulations to download, then press the "Transfer" button to select the Globus destination.  Or, <a href="{{browse_endpoint}}" target="_blank">browse the file tree <i class="fas fa-external-link-alt" aria-hidden="true"></i></a> on Globus.
+      </p>
+      <p>
+      For detailed specifications on the data products, see the <a href="https://abacussummit.readthedocs.io/en/latest/data-products.html" target="_blank">Data Products on ReadTheDocs <i class="fas fa-external-link-alt" aria-hidden="true"></i></a>.  Note that not all data products are available at all redshifts; for example, while halo catalogs are available at 33 redshifts, halo particle positions and velocities are only available at 12 of those, and field particles at 7 of those.
+    </p>
+
+    <div class="form-wrapper">
+      <form class="form-inline" role="form" action="{{url_for('transfer')}}" method="post" id="download-form">
+      
+        <div class="row products-container equal-height">
+            <div class="col-md-4">
+                <div class="product-col" id="redshift-select">
+                    <h3>Redshifts</h3>
+                    <select id="redshift-selector" class="redshift-multi-select redshift-font" name="redshifts[]" multiple="multiple">
+                        {%for z in redshifts%}
+                            <option value="{{z}}">{{z}}</option>
+                        {%endfor%}
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="product-col">
+                    <h3>Products</h3>
+                    <ul class="products-checkbox-list">
+                        {%for desc,ftypes in products.items()%}
+                            <li>
+                                <div class='checkbox'>
+                                    <input type="checkbox" name="products[]" value={{ftypes|join(',')}}, id="ck-{{loop.index}}">
+                                    <label for="ck-{{loop.index}}">{{desc}}</label>
+                                </div>
+                            </li>
+                        {%endfor%}
+                    </ul>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="product-col form-actions" id="transfer-btn-col">
+                    <button id="transfer-btn" name="transfer" type="submit" class="btn btn-primary" disabled="disabled"
+                        value="Transfer">Transfer (make a selection)</button>
+                </div>
+            </div>
+        </div>
+        
+        <hr>
+        
+        <div class="row">
+          <div class="col-md-12">
+            <table class="display compact" id="simulations">
+                <thead>
+                    <tr>
+                        <th></th>
+                        <th>Simulation</th>
+                        <th><i>N</i></th>
+                        <th>Box Size</th>
+                        <th>Particle Mass</th>
+                        <th>Notes</th>
+                    </tr>
+                </thead>
+            
+              {#
+                {# {%for dataset in datasets%}
+                  <tr>
+                    <td class="col-md-5 text-left">
+                      <i class="fa fa-folder fa-lg"></i>&nbsp;
+                        {{dataset["SimName"]}}
+                    </td>
+                    <td class="col-md-1 text-center">
+                      <input type="checkbox" name="dataset" value="{{dataset['id']}}">
+                    </td>
+                  </tr>
+                {%endfor%} #}
+            </table>
+          </div>
+        </div>
+      </form>
+    </div> <!-- form -->
+
+  </div> <!-- container -->
+{%endblock%}

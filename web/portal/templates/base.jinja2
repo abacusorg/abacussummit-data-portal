@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="Description" content="Portal to download AbacusSummit data.">
+    <link rel="shortcut icon" type="image/x-icon" href="{{url_for('static', filename='img/favicon.ico')}}" />
+    <link rel="icon" type="image/x-icon" href="{{url_for('static', filename='img/favicon.ico')}}" />
+
+    <title>AbacusSummit Data Portal - {%block title%}{%endblock%}</title>
+
+    {# CSS files #}
+    <link rel="stylesheet" type="text/css" href="{{url_for('static', filename='css/bootstrap.min.css')}}" />
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.25/css/jquery.dataTables.min.css" />
+    <link rel="stylesheet" type="text/css" href="{{url_for('static', filename='css/select.dataTables.min.css')}}" />
+    <link rel="stylesheet" type="text/css" href="{{url_for('static', filename='css/dataTables.checkboxes.css')}}" />
+    <link rel="stylesheet" type="text/css" href="{{url_for('static', filename='css/style.css')}}" />
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link rel="stylesheet" type="text/css" href="{{url_for('static', filename='css/awesome-bootstrap-checkbox.css')}}" />
+
+    {# Custom Fonts #}
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet" type="text/css">
+    <link href='https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800' rel='stylesheet' type='text/css'>
+
+    {# JavaScript files #}
+    <script type="text/javascript" src="{{url_for('static', filename='js/jquery.min.js')}}"></script>
+    <script type="text/javascript" src="{{url_for('static', filename='js/jquery.highlight.js')}}"></script>
+    <script type="text/javascript" src="{{url_for('static', filename='js/bootstrap.min.js')}}"></script>
+    <script type="text/javascript" src="https://cdn.datatables.net/1.10.25/js/jquery.dataTables.min.js"></script>
+    <script type="text/javascript" src="{{url_for('static', filename='js/dataTables.searchHighlight.min.js')}}"></script>
+    <script type="text/javascript" src="{{url_for('static', filename='js/dataTables.select.min.js')}}"></script>
+    <script type="text/javascript" src="{{url_for('static', filename='js/dataTables.checkboxes.min.js')}}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+    
+  </head>
+  <body>
+    <nav class="navbar navbar-default navbar-custom navbar-fixed-top">
+      <div class="container-fluid">
+        <!-- Brand and toggle get grouped for better mobile display -->
+        <div class="navbar-header page-scroll">
+                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                </button>
+                
+                <a class="navbar-brand" href="{{url_for('home')}}">Home</a>
+                {# <span class="navbar-brand divider">|</span> #}
+                <a class="navbar-brand" href="{{url_for('transfer')}}">Download</a>
+                <a class="navbar-brand" href="{{url_for('about')}}">About</a>
+          </ul>
+        </div>
+            
+
+        <!-- Collect the nav links, forms, and other content for toggling -->
+        <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+          <ul class="nav navbar-nav navbar-right">
+            <!-- Display these links only is user is authenticated -->
+            <!-- Change the condition below to an actual test -->
+            {%if session.get('is_authenticated')%}
+              <li>
+                <a href="{{url_for('profile')}}">Profile</a>
+              </li>
+              <li class="divider">|</li>
+
+              <li>
+                <a href="{{url_for('logout')}}">Logout</a>
+              </li>
+              <li class="divider">|</li>
+
+              <li>
+                <a href="{{url_for('profile')}}">{{session["primary_username"]}}</a>
+              </li>
+            <!-- Display these links if user is not authenticated -->
+            {%else%}
+               <li>
+                <a href="{{url_for('login')}}">Login</a>
+              </li>
+              <li class="divider">|</li>
+
+              <li>
+                <a href="{{url_for('signup')}}">Sign Up</a>
+              </li>
+            {%endif%}
+          </ul>
+        </div> <!-- /.navbar-collapse -->
+      </div> <!-- /.container-fluid -->
+    </nav>
+
+    <!-- Page body -->
+    {%block body%}
+    {%endblock%}
+
+    <!-- Page footer -->
+    {%include 'footer.jinja2'%}
+
+  </body>
+</html>
