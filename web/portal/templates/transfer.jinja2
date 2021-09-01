@@ -15,7 +15,7 @@
       Select the data products and simulations to download, then press the "Transfer" button to select the Globus destination.  Or, <a href="{{browse_endpoint}}" target="_blank">browse the file tree <i class="fas fa-external-link-alt" aria-hidden="true"></i></a> on Globus.
       </p>
       <p>
-      For detailed specifications on the data products, see the <a href="https://abacussummit.readthedocs.io/en/latest/data-products.html" target="_blank">Data Products on ReadTheDocs <i class="fas fa-external-link-alt" aria-hidden="true"></i></a>.  Note that not all data products are available at all redshifts; for example, while halo catalogs are available at 33 redshifts, halo particle positions and velocities are only available at 12 of those, and field particles at 7 of those.
+      For descriptions of the data products, see the <a href="https://abacussummit.readthedocs.io/en/latest/data-products.html" target="_blank">Data Products on ReadTheDocs <i class="fas fa-external-link-alt" aria-hidden="true"></i></a>. Note that not all data products are available at all redshifts; for example, while halo catalogs in the base simulations are available at 33 redshifts, halo particle positions and velocities are only available at the 12 primary redshifts.
     </p>
 
     <div class="form-wrapper">
@@ -70,19 +70,6 @@
                         <th>Notes</th>
                     </tr>
                 </thead>
-            
-              {#
-                {# {%for dataset in datasets%}
-                  <tr>
-                    <td class="col-md-5 text-left">
-                      <i class="fa fa-folder fa-lg"></i>&nbsp;
-                        {{dataset["SimName"]}}
-                    </td>
-                    <td class="col-md-1 text-center">
-                      <input type="checkbox" name="dataset" value="{{dataset['id']}}">
-                    </td>
-                  </tr>
-                {%endfor%} #}
             </table>
           </div>
         </div>

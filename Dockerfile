@@ -10,8 +10,12 @@ EXPOSE 5000
 
 ENV FLASK_ENV development
 ENV FLASK_APP portal/__init__.py
-#ENV PORTAL_SERVER_NAME 
+ENV PORTAL_SERVER_NAME docker.flatironinstitute.org:8142
+
+ENV GLOBUS_CLIENT_ID_FILE="portal/secrets/GLOBUS_CLIENT_ID"
+ENV GLOBUS_CLIENT_SECRET_FILE="portal/secrets/GLOBUS_CLIENT_SECRET"
+ENV GLOBUS_GLOBAL_SECRET_FILE="portal/secrets/GLOBUS_GLOBAL_SECRET"
+
 #ENTRYPOINT ["flask"]
 CMD ["flask", "run", "--host=0.0.0.0", "--cert=adhoc"]
-RUN chmod +x /app/docker-entrypoint.sh
 ENTRYPOINT ["/app/docker-entrypoint.sh"]
