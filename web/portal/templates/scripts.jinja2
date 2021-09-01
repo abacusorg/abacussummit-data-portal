@@ -113,7 +113,7 @@ jQuery(document).ready(function($) {
         
         // Register products callbacks
         $(".products-checkbox-list .checkbox input").change(function() {
-            console.log('checked:', this.checked);
+            //console.log('checked:', this.checked);
             update_transfer_size();
         });
         
@@ -168,7 +168,7 @@ function set_transfer_btn_state(nfiles,size){
 }
 
 function update_transfer_size(){
-    console.log('Updating transfer size...');
+    //console.log('Updating transfer size...');
     
     // Look at the selected simulations, redshifts, and products, and compute the total size
     var redshifts = $('#redshift-selector');
@@ -212,7 +212,7 @@ function update_transfer_size(){
         }
     });
     
-    console.log('Files, size:',nfiles,size);
+    //console.log('Files, size:',nfiles,size);
     set_transfer_btn_state(nfiles,size);
 }
 
