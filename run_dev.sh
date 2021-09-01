@@ -4,6 +4,8 @@
 # To generate local SSL certificate: 
 # $ openssl req -x509 -newkey rsa:4096 -nodes -out portal/ssl/cert.pem -keyout portal/ssl/key.pem -days 365
 
+cd web/
+
 export PORTAL_SERVER_NAME='ccalin008.flatironinstitute.org:8142'
 #export PORTAL_SERVER_NAME='docker.flatironinstitute.org:8142'
 
