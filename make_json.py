@@ -10,7 +10,9 @@ $ ./make_json.py --help
 import json
 import argparse
 from pathlib import Path
+import os
 
+from tqdm import tqdm
 # These are needed to read the header
 import abacusnbody.data.asdf
 import asdf
@@ -19,14 +21,15 @@ import asdf
 # ICs don't quite fall in the redshift-product-ftype hierarchy
 # MergerTest doesn't have the standard set of redshifts
 
-DEFAULT_ROOT = '/mnt/ceph/users/lgarrison/AbacusSummit'
+#DEFAULT_ROOT = '/mnt/ceph/users/lgarrison/AbacusSummit'
+DEFAULT_ROOT = os.environ['CFS'] + '/desi/cosmosim/Abacus'
 DEFAULT_PRODUCTS = dict(halos=dict(path='{}/halos', ftypes=('halo_info','halo_rv_A','halo_pid_A','field_rv_A','field_pid_A')),
                         cleaning=dict(path='cleaning/{}', ftypes=('cleaned_halo_info','cleaned_rvpid')),
                         power=dict(path='power/{}', ftypes=('AB','pack9')),
                         )
                         #lightcones=('heal','pid','rv')  # TODO
-DEFAULT_SIM_PATS = ('AbacusSummit_*/', 'small/AbacusSummit_*/', 'supplemental/MergerTest_*/')
-DEFAULT_OUTFN = 'portal/static/data/simulations.json'
+DEFAULT_SIM_PATS = ('AbacusSummit_*/', 'small/AbacusSummit_*/')
+DEFAULT_OUTFN = 'web/portal/static/data/simulations.json'
 
 DEFAULT_REDSHIFTS = [0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.575, 0.65, 0.725, 0.8, 0.875, 0.95, 1.025, 1.1, 1.175, 1.25, 1.325, 1.4, 1.475, 1.55, 1.625, 1.7, 1.85, 2.0, 2.25, 2.5, 2.75, 3.0, 5.0, 8.0]
 
@@ -47,15 +50,19 @@ def find_products(simdir, products, redshifts):
                 if (fpath:=zdir/ftype).is_dir():
                     du = [fn.stat().st_size for fn in fpath.iterdir()]
                     nfile = len(du)
-                    du = sum(du)
+                    du = f'{sum(du):.3g}'  # round to save characters
                     j[prod][zval][ftype] = [nfile,du]  # j['halos']['0.100']['halo_info']
 
                     if not header:
-                        with asdf.open(next(fpath.glob('*.asdf'))) as af:
-                            for k in ('BoxSize','SimComment','ParticleMassHMsun'):
-                                header[k] = af['header'][k]
-                                    
-                            header['PPD'] = int(round(af['header']['NP']**(1/3)))
+                        try:
+                            with asdf.open(next(fpath.glob('*.asdf'))) as af:
+                                for k in ('BoxSize','SimComment','ParticleMassHMsun'):
+                                    header[k] = af['header'][k]
+
+                                header['PPD'] = int(round(af['header']['NP']**(1/3)))
+                        except Exception as e:
+                            raise Exception(f'Failed in: {fpath}') from e
+                            
             # this z not on disk?
             if not j[prod][zval]:
                 del j[prod][zval]
@@ -75,6 +82,7 @@ def main(sim_pats=DEFAULT_SIM_PATS,
          root=DEFAULT_ROOT,
          out=DEFAULT_OUTFN,
          redshifts=DEFAULT_REDSHIFTS,
+         compact=True,
         ):
     root = Path(root)
     
@@ -84,7 +92,7 @@ def main(sim_pats=DEFAULT_SIM_PATS,
     
     rows = []  # d['AbacusSummit_base_c000_ph000']['halos']['z0.100']['halo_info']
     
-    for sim in sorted(sims):
+    for sim in tqdm(sorted(sims)):
         sim = Path(sim)
         
         row = find_products(sim, products, redshifts)
@@ -106,7 +114,12 @@ def main(sim_pats=DEFAULT_SIM_PATS,
                 'redshifts':redshifts,
                 # TODO
                 'products':products}
-    s = json.dumps(manifest, indent=4)
+    
+    if compact:
+        jsargs = dict(separators=(',', ':'))
+    else:
+        jsargs = dict(indent=4)
+    s = json.dumps(manifest, **jsargs)
     #print(s)
     with open(out, 'w', encoding='utf-8') as fp:
         fp.write(s)
