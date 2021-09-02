@@ -6,7 +6,7 @@
 
 body {
   font-family: 'Open Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
-  font-size: 18px;
+  font-size: 16px;
   color: #404040;
 }
 
@@ -596,5 +596,5 @@ input[type="radio"].styled:checked + label:after {
 
 .products-checkbox-list .checkbox label::before,
 .products-checkbox-list .checkbox label::after {
-    margin-top: 5px;  /* incredibly hacky, but can't get the checkbox and label aligned... */
+    margin-top: 4px;  /* incredibly hacky, but can't get the checkbox and label aligned... */
 }
