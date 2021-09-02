@@ -29,7 +29,11 @@ DEFAULT_PRODUCTS = dict(halos=dict(path='{}/halos', ftypes=('halo_info','halo_rv
                         )
                         #lightcones=('heal','pid','rv')  # TODO
 DEFAULT_SIM_PATS = ('AbacusSummit_*/', 'small/AbacusSummit_*/')
+<<<<<<< HEAD
 DEFAULT_OUTFN = 'web/portal/static/data/simulations.json'
+=======
+DEFAULT_OUTFN = 'portal/static/data/simulations.json'
+>>>>>>> 3d818e7053b5a3aafe859665e92da5a40143eb19
 
 DEFAULT_REDSHIFTS = [0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.575, 0.65, 0.725, 0.8, 0.875, 0.95, 1.025, 1.1, 1.175, 1.25, 1.325, 1.4, 1.475, 1.55, 1.625, 1.7, 1.85, 2.0, 2.25, 2.5, 2.75, 3.0, 5.0, 8.0]
 
