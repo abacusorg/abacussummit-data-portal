@@ -125,10 +125,10 @@ jQuery(document).ready(function($) {
         // Hook up the form button
         $('#download-form').on('submit', function(e){
             var $form = $(this);
-            var simsel = simtable.rows('.selected').ids();
+            var rows = simtable.rows('.selected').ids();
             var simids = [];
             simsel.each(function (simidx){
-                simids.push(simidx);
+                simids.push.apply(simids, manifest.data[simidx]['all_ids']);
             });
             var input = $("<input>").attr({"type":"hidden","name":"simids[]"}).val(simids);
             $form.append(input);

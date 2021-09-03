@@ -269,7 +269,7 @@ def transfer():
         browse_endpoint = f'https://app.globus.org/file-manager?{urlencode(dict(origin_id=endpoint_id,origin_path=endpoint_path))}'
         
         return render_template('transfer.jinja2',
-                               dataset_uri=app.config['DATASETS'],
+                               dataset_uri=app.config['DATASETS_TABLE'],
                                browse_endpoint=browse_endpoint,
                                redshifts=datasets['redshifts'],
                                products=dataset_desc['products'],
@@ -355,15 +355,17 @@ def submit_transfer():
             for category,ftype in products:
                 if category not in sim or z not in sim[category] or ftype not in sim[category][z]:
                     continue
-                    
+                
                 pathfmt = datasets['products'][category]['path']  # cleaning/{}
+                if type(sim['root']) is str:
+                    sim['root'] = [sim['root']]
+                for root in sim['root']:  # each small sim, e.g.
+                    source_path = source_endpoint_base / pathfmt.format(sim['root']) / zstr / ftype
+                    dest_path = dest_path_base / pathfmt.format(sim['root']) / zstr / ftype
 
-                source_path = source_endpoint_base / pathfmt.format(sim['root']) / zstr / ftype
-                dest_path = dest_path_base / pathfmt.format(sim['root']) / zstr / ftype
-
-                transfer_data.add_item(source_path=source_path,
-                                       destination_path=dest_path,
-                                       recursive=True)
+                    transfer_data.add_item(source_path=source_path,
+                                           destination_path=dest_path,
+                                           recursive=True)
 
     transfer.endpoint_autoactivate(source_endpoint_id)
     transfer.endpoint_autoactivate(destination_endpoint_id)
