@@ -94,6 +94,7 @@ def _collapsed_manifest(manifest, ngroup=100, nsingle=10):
     for row in rows:
         row['all_ids'] = [row['id']]
     
+    grouprows = {}
     for row in rows:
         if m:=re.match(r'AbacusSummit_small_c\d{3}_ph(\d{4})', row['name']):
             # Preserve a few small sims for individual download
@@ -103,15 +104,15 @@ def _collapsed_manifest(manifest, ngroup=100, nsingle=10):
             ph = int(m.group(1))
             baseph = ph//ngroup*ngroup
             groupname = row['name'][:-4] + f'{{{baseph}-{baseph+ngroup-1}}}'
-            if groupname not in newrows:
+            if groupname not in grouprows:
                 grouprow = copy.deepcopy(row)
                 del grouprow['root']
-                newrows[groupname] = grouprow
+                grouprows[groupname] = grouprow
                 grouprow['name'] = groupname
                 grouprow['all_ids'] = []  # start a list of all ids in this set
                 grouprow['header']['SimComment'] = 'Set of 100 small boxes, base cosmology, no lightcone'
             else:
-                grouprow = newrows[groupname]
+                grouprow = grouprows[groupname]
                 # Add du, if not copied
                 for p in manifest['products']:
                     if p not in row:
@@ -128,6 +129,8 @@ def _collapsed_manifest(manifest, ngroup=100, nsingle=10):
             
         else:
             newrows[row['name']] = row
+            
+    newrows.update(grouprows)
             
     # fix IDs
     newrows = list(newrows.values())
@@ -195,7 +198,7 @@ def main(sim_pats=DEFAULT_SIM_PATS,
         jsargs = dict(separators=(',', ':'))
     else:
         jsargs = dict(indent=4)
-    s = json.dumps(manifest, **jsargs)
+    s = json.dumps(manifest, indent=4)
     #print(s)
     with open(out / "simulations.json", 'w', encoding='utf-8') as fp:
         fp.write(s)
