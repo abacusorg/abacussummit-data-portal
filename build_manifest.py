@@ -94,12 +94,12 @@ def _collapsed_manifest(manifest, ngroup=100, nsingle=10):
     for row in rows:
         row['all_ids'] = [row['id']]
     
-    # Preserve a few small sims for individual download
-    for row in rows[:nsingle]:
-        newrows[row['name']] = copy.deepcopy(row)
-    
     for row in rows:
         if m:=re.match(r'AbacusSummit_small_c\d{3}_ph(\d{4})', row['name']):
+            # Preserve a few small sims for individual download
+            if nsingle:
+                newrows[row['name']] = copy.deepcopy(row)
+                nsingle -= 1
             ph = int(m.group(1))
             baseph = ph//ngroup*ngroup
             groupname = row['name'][:-4] + f'{{{baseph}-{baseph+ngroup-1}}}'
@@ -109,6 +109,7 @@ def _collapsed_manifest(manifest, ngroup=100, nsingle=10):
                 newrows[groupname] = grouprow
                 grouprow['name'] = groupname
                 grouprow['all_ids'] = []  # start a list of all ids in this set
+                grouprow['header']['SimComment'] = 'Set of 100 small boxes, base cosmology, no lightcone'
             else:
                 grouprow = newrows[groupname]
                 # Add du, if not copied
@@ -116,6 +117,9 @@ def _collapsed_manifest(manifest, ngroup=100, nsingle=10):
                     if p not in row:
                         continue
                     for z in row[p]:
+                        if z not in grouprow[p]:
+                            grouprow[p][z] = copy.deepcopy(row[p][z])  # init if necessary
+                            continue
                         for ftype in row[p][z]:
                             grouprow[p][z][ftype][0] += row[p][z][ftype][0]
                             grouprow[p][z][ftype][1] += row[p][z][ftype][1]
@@ -160,7 +164,7 @@ def main(sim_pats=DEFAULT_SIM_PATS,
     
     rows = []  # d['AbacusSummit_base_c000_ph000']['halos']['z0.100']['halo_info']
     
-    sims = [sim for i,sim in enumerate(sorted(sims)) if i == 0 or i > 2050]
+    #sims = [sim for i,sim in enumerate(sorted(sims)) if i == 0 or i > 2050]
     for sim in tqdm(sorted(sims)):
         sim = Path(sim)
         
