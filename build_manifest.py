@@ -83,20 +83,29 @@ def find_products(simdir, products, redshifts):
     return j
 
 
-def _collapsed_manifest(manifest, ngroup=100):
+def _collapsed_manifest(manifest, ngroup=100, nsingle=10):
     '''Group the small sims in sets of 100.
     '''
     manifest = copy.deepcopy(manifest)
     rows = manifest['data']
     
     newrows = {}
+    
+    for row in rows:
+        row['all_ids'] = [row['id']]
+    
+    # Preserve a few small sims for individual download
+    for row in rows[:nsingle]:
+        newrows[row['name']] = copy.deepcopy(row)
+    
     for row in rows:
         if m:=re.match(r'AbacusSummit_small_c\d{3}_ph(\d{4})', row['name']):
             ph = int(m.group(1))
             baseph = ph//ngroup*ngroup
             groupname = row['name'][:-4] + f'{{{baseph}-{baseph+ngroup-1}}}'
             if groupname not in newrows:
-                grouprow = row.copy()
+                grouprow = copy.deepcopy(row)
+                del grouprow['root']
                 newrows[groupname] = grouprow
                 grouprow['name'] = groupname
                 grouprow['all_ids'] = []  # start a list of all ids in this set
@@ -114,7 +123,7 @@ def _collapsed_manifest(manifest, ngroup=100):
             grouprow['all_ids'] += [row['id']]
             
         else:
-            newrows[row['name']] = [row]
+            newrows[row['name']] = row
             
     # fix IDs
     newrows = list(newrows.values())
@@ -151,7 +160,8 @@ def main(sim_pats=DEFAULT_SIM_PATS,
     
     rows = []  # d['AbacusSummit_base_c000_ph000']['halos']['z0.100']['halo_info']
     
-    for sim in tqdm(sorted(sims)[2050:]):
+    sims = [sim for i,sim in enumerate(sorted(sims)) if i == 0 or i > 2050]
+    for sim in tqdm(sorted(sims)):
         sim = Path(sim)
         
         row = find_products(sim, products, redshifts)
