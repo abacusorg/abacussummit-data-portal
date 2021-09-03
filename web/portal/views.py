@@ -317,6 +317,7 @@ def submit_transfer():
     
     # simids is actually a singlet string, just to try to keep the POST small
     simids = list(map(int, simids[0].split(',')))
+    simids = list(dict.fromkeys(simids))  # dedupe
     sims = [sim for sim in datasets['data'] if sim['id'] in simids]
     
     # flatten products
