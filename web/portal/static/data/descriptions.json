@@ -1,7 +1,6 @@
-{"products": {"Halo catalogs": ["halos.halo_info"],
-              "Halo catalog cleaning info": ["cleaning.cleaned_halo_info","cleaning.cleaned_rvpid"],
-              "Halo pos. & vel. subsample (3%)": ["halos.halo_rv_A"],
-              "Halo PID subsample (3%)": ["halos.halo_pid_A"],
+{"products": {"Halo catalogs": ["halos.halo_info","cleaning.cleaned_halo_info"],
+              "Halo pos. & vel. subsample (3%)": ["halos.halo_rv_A","cleaning.cleaned_rvpid"],
+              "Halo PID subsample (3%)": ["halos.halo_pid_A","cleaning.cleaned_rvpid"],
               "Field pos. & vel. subsample (3%)": ["halos.field_rv_A"],
               "Field PID subsample (3%)": ["halos.field_pid_A"],
               "Matter power spectra": ["power.AB","power.pack9"]

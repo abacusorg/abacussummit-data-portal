@@ -181,6 +181,7 @@ function update_transfer_size(){
         var res = sp.filter(s => s);
         return res;
     });
+    prodsel = [...new Set(prodsel)];
     // prodsel = prodsel => [].concat(...prodsel);  // ["cleaning.cleaned_halo_info",'cleaning.cleaned_rvpid']
 
     var size = 0;

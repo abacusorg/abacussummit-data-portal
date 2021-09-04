@@ -322,6 +322,7 @@ def submit_transfer():
     
     # flatten products
     products = sum((p.strip(',').split(',') for p in products), [])
+    products = list(dict.fromkeys(products))  # dedupe
     products = [ p.split('.') for p in products ]  # [ ('halos','halo_info'), ('power','AB'), ('power','pack9')]
     
     transfer_tokens = session['tokens']['transfer.api.globus.org']
@@ -358,15 +359,12 @@ def submit_transfer():
                     continue
                 
                 pathfmt = datasets['products'][category]['path']  # cleaning/{}
-                if type(sim['root']) is str:
-                    sim['root'] = [sim['root']]
-                for root in sim['root']:  # each small sim, e.g.
-                    source_path = source_endpoint_base / pathfmt.format(sim['root']) / zstr / ftype
-                    dest_path = dest_path_base / pathfmt.format(sim['root']) / zstr / ftype
+                source_path = source_endpoint_base / pathfmt.format(sim['root']) / zstr / ftype
+                dest_path = dest_path_base / pathfmt.format(sim['root']) / zstr / ftype
 
-                    transfer_data.add_item(source_path=source_path,
-                                           destination_path=dest_path,
-                                           recursive=True)
+                transfer_data.add_item(source_path=source_path,
+                                       destination_path=dest_path,
+                                       recursive=True)
 
     transfer.endpoint_autoactivate(source_endpoint_id)
     transfer.endpoint_autoactivate(destination_endpoint_id)
