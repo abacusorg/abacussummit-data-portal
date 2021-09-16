@@ -131,3 +131,5 @@ dmypy.json
 # portal-specific excludes
 ssl/
 secrets/
+
+environment.sh
