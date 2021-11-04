@@ -1,3 +1,5 @@
 abacusutils>=1.0
 flake8==3.7.9
 tqdm
+globus_sdk
+fair_research_login
