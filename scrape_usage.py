@@ -93,4 +93,4 @@ if __name__ == "__main__":
             files_transferred += task['files_transferred']
 
     print(f'Found {ntask} transfers (from {earliest} onwards)')
-    print(f'Lifetime data transfered: {bytes_transferred/1e12:.4g} TB, {files_transferred/10**6:.4g} K files')
+    print(f'Lifetime data transfered: {bytes_transferred/1e12:.4g} TB, {files_transferred/1e3:.4g} K files')
