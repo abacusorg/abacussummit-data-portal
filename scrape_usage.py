@@ -45,7 +45,8 @@ def get_client_tokens():
         # N.B. the no_local_server is the key option not in the Globus automation-examples
         # that lets us accomplish the login on a remote node.
         tokens = client.login(requested_scopes=SCOPES,
-                              refresh_tokens=True, no_local_server=True)
+                              refresh_tokens=True, no_local_server=True,
+                              no_browser=True)
         try:
             client.save_tokens(tokens)
         except:
