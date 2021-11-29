@@ -83,6 +83,7 @@ if __name__ == "__main__":
     ntask = 0
     bytes_transferred = 0
     files_transferred = 0
+    users = []
     earliest = 'unknown'
     for page in tc.paginated.endpoint_manager_task_list(filter_endpoint=ABACUSSUMMIT_NERSC_ENDPOINT):
         for task in page:
@@ -92,6 +93,10 @@ if __name__ == "__main__":
             ntask += 1
             bytes_transferred += task['bytes_transferred']
             files_transferred += task['files_transferred']
+            users += [task['owner_id']]
+            
+    nusers = len(set(users))
 
     print(f'Found {ntask} transfers (from {earliest} onwards)')
     print(f'Lifetime data transfered: {bytes_transferred/1e12:.4g} TB, {files_transferred/1e3:.4g} K files')
+    print(f'{nusers} unique users')
