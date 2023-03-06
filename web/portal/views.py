@@ -343,10 +343,12 @@ def submit_transfer():
     if destination_folder:
         dest_path_base /= destination_folder
 
+    label = browse_endpoint_form.get('label') or None
+
     transfer_data = TransferData(transfer_client=transfer,
                                  source_endpoint=source_endpoint_id,
                                  destination_endpoint=destination_endpoint_id,
-                                 label=browse_endpoint_form.get('label'),
+                                 label=label,
                                  encrypt_data=False,verify_checksum=False,
                                  sync_level=app.config['GLOBUS_SYNC_LEVEL'],
                                 )

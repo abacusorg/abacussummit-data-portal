@@ -6,7 +6,7 @@
 
 cd web/
 
-export PORTAL_SERVER_NAME='ccalin008.flatironinstitute.org:8142'
+export PORTAL_SERVER_NAME='localhost:8142'
 #export PORTAL_SERVER_NAME='docker.flatironinstitute.org:8142'
 
 export FLASK_ENV=development
