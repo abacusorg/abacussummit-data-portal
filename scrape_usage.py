@@ -6,11 +6,9 @@ based on a script kindly provided by Lisa Gerhardt at NERSC
 
 from __future__ import print_function
 import argparse
-import tempfile, shlex, os
-from subprocess import Popen, PIPE, STDOUT
 
 from globus_sdk import (NativeAppAuthClient, TransferClient,
-                        RefreshTokenAuthorizer, TransferData)
+                        RefreshTokenAuthorizer)
 
 from fair_research_login import NativeClient
 
@@ -23,8 +21,9 @@ from fair_research_login import NativeClient
 # https://docs.globus.org/api/auth/developer-guide/#register-app
 CLIENT_ID = '644ae30e-c8f9-4996-8100-0035196aa49e'
 REDIRECT_URI = 'https://auth.globus.org/v2/web/auth-code'
-SCOPES = ('openid email profile '
-          'urn:globus:auth:scope:transfer.api.globus.org:all')
+SCOPES = ['openid', 'email', 'profile',
+          'urn:globus:auth:scope:transfer.api.globus.org:all',
+          ]
 
 APP_NAME = 'Scrape AbacusSummit Data Portal Usage'
 
@@ -36,7 +35,7 @@ def get_client_tokens():
     try:
         # if we already have tokens, load and use them
         tokens = client.load_tokens(requested_scopes=SCOPES)
-    except:
+    except:  # noqa: E722
         pass
 
     if not tokens:
@@ -46,10 +45,11 @@ def get_client_tokens():
         # that lets us accomplish the login on a remote node.
         tokens = client.login(requested_scopes=SCOPES,
                               refresh_tokens=True, no_local_server=True,
-                              no_browser=True)
+                              no_browser=True,
+                              )
         try:
             client.save_tokens(tokens)
-        except:
+        except:  # noqa: E722
             pass
 
     return tokens
@@ -72,11 +72,10 @@ def setup_transfer_client():
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Globus transfer lister')
-    parser.add_argument('-d','--details',help="Get details on individual transfers", action='store_true')
+    # parser.add_argument('-d','--details',help="Get details on individual transfers", action='store_true')
     parser.add_argument('-i','--individual',help="List individual transfers (default is aggregate stats)", action='store_true')
-    optionalNamed = parser.add_argument_group('Optional arguments')
     
-    args = parser.parse_args()
+    args = vars(parser.parse_args())
     
     tc = setup_transfer_client()
     
@@ -94,9 +93,11 @@ if __name__ == "__main__":
             bytes_transferred += task['bytes_transferred']
             files_transferred += task['files_transferred']
             users += [task['owner_id']]
+            if args['individual']:
+                print(f"User {task['owner_id']} @ {task['request_time']}: {task['bytes_transferred']/1e9:7.2f} GB, {task['files_transferred']:5d} files")
             
     nusers = len(set(users))
 
     print(f'Found {ntask} transfers (from {earliest} onwards)')
-    print(f'Lifetime data transfered: {bytes_transferred/1e12:.4g} TB, {files_transferred/1e3:.4g} K files')
+    print(f'Data transfered: {bytes_transferred/1e12:.4g} TB, {files_transferred/1e3:.4g} K files')
     print(f'{nusers} unique users')
