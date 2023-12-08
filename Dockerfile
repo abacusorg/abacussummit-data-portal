@@ -8,13 +8,19 @@ RUN pip3 install -r requirements.txt && \
 
 EXPOSE 5000
 
-#ENV FLASK_ENV development
 ENV FLASK_APP portal/__init__.py
-#ENV PORTAL_SERVER_NAME docker.flatironinstitute.org:8142
 
-#ENV GLOBUS_CLIENT_ID_FILE="portal/secrets/GLOBUS_CLIENT_ID"
-#ENV GLOBUS_CLIENT_SECRET_FILE="portal/secrets/GLOBUS_CLIENT_SECRET"
-#ENV GLOBUS_GLOBAL_SECRET_FILE="portal/secrets/GLOBUS_GLOBAL_SECRET"
+# Run the Flask server in development mode
+# To generate local SSL certificate: 
+# $ openssl req -x509 -newkey rsa:4096 -nodes -out portal/ssl/cert.pem -keyout portal/ssl/key.pem -days 365
+# ENV FLASK_DEBUG 1
+# ENV FLASK_ENV development
+# ENV PORTAL_SERVER_NAME localhost:8142
+
+# ENV GLOBUS_CLIENT_ID_FILE="portal/secrets/GLOBUS_CLIENT_ID"
+# ENV GLOBUS_CLIENT_SECRET_FILE="portal/secrets/GLOBUS_CLIENT_SECRET"
+# ENV GLOBUS_GLOBAL_SECRET_FILE="portal/secrets/GLOBUS_GLOBAL_SECRET"
+# CMD ["flask", "run", "--host=0.0.0.0", "--cert=portal/ssl/cert.pem", "--key=portal/ssl/key.pem"]
 
 CMD ["flask", "run", "--host=0.0.0.0"]
 ENTRYPOINT ["/app/docker-entrypoint.sh"]
