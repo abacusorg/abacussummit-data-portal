@@ -1,4 +1,3 @@
-import requests
 from flask import (abort, flash, redirect, render_template, request, session,
                    url_for)
 from globus_sdk import (RefreshTokenAuthorizer, TransferAPIError,
@@ -439,7 +438,10 @@ def submit_transfer():
             session['_inflight_transfer_consent'] = data_access_scope
             session['_inflight_transfer'] = transfer_params
             scopes = app.config['USER_SCOPES'] + (data_access_scope, "urn:globus:auth:scope:transfer.api.globus.org:all["+ data_access_scope +"]")
-            redirect_uri = url_for('authcallback', _external=True)
+            redirect_uri = url_for('authcallback',
+                                   _external=True,
+                                   _scheme=app.config.get("AUTHCALLBACK_SCHEME"),
+                                   )
             client = load_portal_client()
             client.oauth2_start_flow(
                 redirect_uri,
