@@ -298,7 +298,8 @@ def transfer():
         browse_endpoint = 'https://app.globus.org/file-manager?{}' \
             .format(urlencode(params))
         
-        session['form'] = {k:request.form.getlist(k) for k in keys}
+        session['form_key'] = database.save_pending_form(
+            {k: request.form.getlist(k) for k in keys})
 
         return redirect(browse_endpoint)
 
@@ -311,9 +312,14 @@ def transfer_datasets(params):
       from the transfer.
     """
 
-    redshifts = session['form']['redshifts[]']
-    products  = session['form']['products[]']
-    simids    = session['form']['simids[]']
+    form = database.load_pending_form(session.get('form_key', ''))
+    if form is None:
+        flash('Your transfer selection could not be found; please select again.')
+        return redirect(url_for('transfer'))
+
+    redshifts = form['redshifts[]']
+    products  = form['products[]']
+    simids    = form['simids[]']
     
     # simids is actually a singlet string, just to try to keep the POST small
     simids = list(map(int, simids[0].split(',')))

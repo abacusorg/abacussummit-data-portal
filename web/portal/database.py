@@ -1,6 +1,10 @@
 """Manage access to the database."""
 
+import json
 import sqlite3
+import time
+import uuid
+
 from flask import g
 
 
@@ -58,6 +62,31 @@ class Database:
                    select ?, ?, ?, ? where changes() = 0""",
                    (identity_id, name, email, institution))
         db.commit()
+
+    def save_pending_form(self, form):
+        """Stash a transfer form server-side and return a lookup key.
+
+        The form can list thousands of simulation IDs, far exceeding the
+        4 KB cookie limit if kept in the session.
+        """
+        db = self.get_db()
+
+        db.execute("""create table if not exists pending_form
+                   (key text primary key, created integer, form text)""")
+        db.execute("delete from pending_form where created < ?",
+                   (int(time.time()) - 86400,))
+
+        key = uuid.uuid4().hex
+        db.execute("insert into pending_form (key, created, form) values (?, ?, ?)",
+                   (key, int(time.time()), json.dumps(form)))
+        db.commit()
+
+        return key
+
+    def load_pending_form(self, key):
+        row = self.query_db("select form from pending_form where key = ?",
+                            [key], one=True)
+        return json.loads(row['form']) if row else None
 
     def load_profile(self, identity_id):
         """Load user profile."""
