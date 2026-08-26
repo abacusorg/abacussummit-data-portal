@@ -367,9 +367,13 @@ def transfer_datasets(params):
                                        destination_path=dest_path,
                                        recursive=True)
 
-    transfer.endpoint_autoactivate(source_endpoint_id)
-    transfer.endpoint_autoactivate(destination_endpoint_id)
-    task_id = transfer.submit_transfer(transfer_data)['task_id']
+    try:
+        transfer.endpoint_autoactivate(source_endpoint_id)
+        transfer.endpoint_autoactivate(destination_endpoint_id)
+        task_id = transfer.submit_transfer(transfer_data)['task_id']
+    except TransferAPIError as err:
+        flash('Error [{}]: {}'.format(err.code, err.message))
+        return redirect(url_for('transfer'))
 
     status_uri = f'https://app.globus.org/activity/{task_id}'
     status_uri = f'<a href="{status_uri}" target="_blank">{status_uri} <i class="fas fa-external-link-alt"></i></a>'
