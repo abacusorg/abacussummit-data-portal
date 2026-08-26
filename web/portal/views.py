@@ -382,7 +382,9 @@ def transfer_datasets(params):
 @app.route('/submit-transfer', methods=['GET'])
 @authenticated
 def process_inflight_transfer():
-    transfer_data = session['_inflight_transfer']
+    transfer_data = session.pop('_inflight_transfer', None)
+    if transfer_data is None:
+        return redirect(url_for('transfer'))
     return transfer_datasets(transfer_data)
 
 
@@ -432,10 +434,12 @@ def submit_transfer():
 
     if is_non_ha_mapped:
         data_access_scope = "https://auth.globus.org/scopes/" + destination["id"] + "/data_access"
-        has_consented = session.get('_inflight_transfer_consent') and session['tokens'].get(session['_inflight_consent'])
+        # Consenting to a collection's data_access scope yields a token whose
+        # resource server is the collection UUID, so its presence in the
+        # session's tokens marks consent for this specific destination.
+        has_consented = destination['id'] in session['tokens']
 
         if not has_consented:
-            session['_inflight_transfer_consent'] = data_access_scope
             session['_inflight_transfer'] = transfer_params
             scopes = app.config['USER_SCOPES'] + (data_access_scope, "urn:globus:auth:scope:transfer.api.globus.org:all["+ data_access_scope +"]")
             redirect_uri = url_for('authcallback',
