@@ -199,6 +199,20 @@ select {
   margin-bottom: 25px;
 }
 
+/* JPEG first so browsers without webp support (e.g. Safari < 14) get a
+   banner; image-set() with type() upgrades capable browsers to webp */
+.intro-header-home {
+  background-image: url(../img/home-bg.jpg);
+  background-image: image-set(url(../img/home-bg.webp) type("image/webp"),
+                              url(../img/home-bg.jpg) type("image/jpeg"));
+}
+
+.intro-header-menu {
+  background-image: url(../img/menu-bg.jpg);
+  background-image: image-set(url(../img/menu-bg.webp) type("image/webp"),
+                              url(../img/menu-bg.jpg) type("image/jpeg"));
+}
+
 .intro-header .site-heading,
 .intro-header .post-heading,
 .intro-header .page-heading {
