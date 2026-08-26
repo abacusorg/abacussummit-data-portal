@@ -1,5 +1,6 @@
 from flask import (abort, flash, redirect, render_template, request, session,
                    url_for)
+from markupsafe import Markup
 from globus_sdk import (RefreshTokenAuthorizer, TransferAPIError,
                         TransferClient, TransferData)
 
@@ -376,8 +377,10 @@ def transfer_datasets(params):
         return redirect(url_for('transfer'))
 
     status_uri = f'https://app.globus.org/activity/{task_id}'
-    status_uri = f'<a href="{status_uri}" target="_blank">{status_uri} <i class="fas fa-external-link-alt"></i></a>'
-    flash('Transfer request submitted successfully! View transfer status on Globus: ' + status_uri)
+    # Markup.format escapes its arguments, so only the literal HTML is trusted
+    flash(Markup('Transfer request submitted successfully! View transfer status'
+                 ' on Globus: <a href="{0}" target="_blank">{0}'
+                 ' <i class="fas fa-external-link-alt"></i></a>').format(status_uri))
 
     return(redirect(url_for('transfer', task_id=task_id)))
 

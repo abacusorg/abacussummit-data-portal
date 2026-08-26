@@ -8,6 +8,9 @@ __author__ = 'Lehman Garrison <lgarrison@flatironinstitute.org>'
 app = Flask(__name__)
 app.config.from_pyfile('portal.conf')
 app.config['TEMPLATES_AUTO_RELOAD'] = True
+# Flask only autoescapes by file extension (.html etc.), which excludes our
+# .jinja2 templates; force it on so untrusted values are escaped by default.
+app.jinja_env.autoescape = True
 
 database = Database(app)
 
