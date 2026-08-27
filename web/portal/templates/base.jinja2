@@ -62,17 +62,12 @@
             <!-- Change the condition below to an actual test -->
             {%if session.get('is_authenticated')%}
               <li>
-                <a href="{{url_for('profile')}}">Profile</a>
-              </li>
-              <li class="divider">|</li>
-
-              <li>
                 <a href="{{url_for('logout')}}">Logout</a>
               </li>
               <li class="divider">|</li>
 
               <li>
-                <a href="{{url_for('profile')}}">{{session["primary_username"]}}</a>
+                <p class="navbar-text">{{session["primary_username"]}}</p>
               </li>
             <!-- Display these links if user is not authenticated -->
             {%else%}

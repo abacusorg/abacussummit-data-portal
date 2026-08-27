@@ -4,9 +4,9 @@ from markupsafe import Markup
 from globus_sdk import (RefreshTokenAuthorizer, TransferAPIError,
                         TransferClient, TransferData)
 
-from portal import app, database, datasets, dataset_desc
+from portal import app, datasets, dataset_desc
 from portal.decorators import authenticated
-from portal.utils import csrf_valid, get_safe_redirect, load_portal_client
+from portal.utils import csrf_valid, load_portal_client
 
 try:
     from urllib.parse import urlencode
@@ -77,52 +77,6 @@ def logout():
     return redirect(''.join(ga_logout_url))
 
 
-@app.route('/profile', methods=['GET', 'POST'])
-@authenticated
-def profile():
-    """User profile information. Assocated with a Globus Auth identity."""
-    if request.method == 'GET':
-        identity_id = session.get('primary_identity')
-        profile = database.load_profile(identity_id)
-
-        if profile:
-            name, email, institution = profile
-
-            session['name'] = name
-            session['email'] = email
-            session['institution'] = institution
-        else:
-            flash(
-                'Please complete any missing profile fields and press Save.')
-
-        if request.args.get('next'):
-            session['next'] = get_safe_redirect()
-
-        return render_template('profile.jinja2')
-    elif request.method == 'POST':
-        if not csrf_valid():
-            abort(400)
-
-        name = session['name'] = request.form['name']
-        email = session['email'] = request.form['email']
-        institution = session['institution'] = request.form['institution']
-
-        database.save_profile(identity_id=session['primary_identity'],
-                              name=name,
-                              email=email,
-                              institution=institution)
-
-        flash('Thank you! Your profile has been successfully updated.')
-
-        if 'next' in session:
-            redirect_to = session['next']
-            session.pop('next')
-        else:
-            redirect_to = url_for('profile')
-
-        return redirect(redirect_to)
-
-
 @app.route('/authcallback', methods=['GET'])
 def authcallback():
     """Handles the interaction with Globus Auth."""
@@ -174,18 +128,6 @@ def authcallback():
             primary_identity=id_token.get('sub'),
         )
 
-        profile = database.load_profile(session['primary_identity'])
-
-        if profile:
-            name, email, institution = profile
-
-            session['name'] = name
-            session['email'] = email
-            session['institution'] = institution
-        else:
-            return redirect(url_for('profile',
-                            next=url_for('transfer')))
-        
         state = request.args.get('state')
         if state == '_inflight_transfer_consent':
             return redirect(url_for('process_inflight_transfer'))
@@ -304,8 +246,9 @@ def transfer():
         browse_endpoint = 'https://app.globus.org/file-manager?{}' \
             .format(urlencode(params))
         
-        session['form_key'] = database.save_pending_form(
-            {k: request.form.getlist(k) for k in keys})
+        # sessions are server-side, so a large selection here cannot
+        # overflow the 4 KB cookie limit
+        session['form'] = {k: request.form.getlist(k) for k in keys}
 
         return redirect(browse_endpoint)
 
@@ -318,7 +261,7 @@ def transfer_datasets(params):
       from the transfer.
     """
 
-    form = database.load_pending_form(session.get('form_key', ''))
+    form = session.get('form')
     if form is None:
         flash('Your transfer selection could not be found; please select again.')
         return redirect(url_for('transfer'))

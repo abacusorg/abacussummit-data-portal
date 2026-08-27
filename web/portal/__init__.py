@@ -2,8 +2,6 @@ from flask import Flask
 from flask_session import Session
 import json
 
-from portal.database import Database
-
 __author__ = 'Lehman Garrison <lgarrison@flatironinstitute.org>'
 
 app = Flask(__name__)
@@ -14,8 +12,6 @@ app.config['TEMPLATES_AUTO_RELOAD'] = True
 app.jinja_env.autoescape = True
 
 Session(app)
-
-database = Database(app)
 
 
 @app.after_request

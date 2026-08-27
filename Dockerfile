@@ -3,9 +3,8 @@ RUN apt-get update --quiet -y && \
     apt-get install -y python3-flask python3-pip
 WORKDIR /app
 COPY web /app
-# portal/data holds runtime state (SQLite DB, server-side sessions), created
-# on first use by whatever UID the container runs as; mount a volume here to
-# persist it across deployments
+# portal/data holds the server-side session store, created on first use by
+# whatever UID the container runs as
 RUN pip3 install -r requirements.txt && \
     mkdir -p portal/data && chmod a+rwx portal/data
 

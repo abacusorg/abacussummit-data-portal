@@ -6,11 +6,6 @@ from flask import request, session
 
 import globus_sdk
 
-try:
-    from urllib.parse import urlparse, urljoin
-except ImportError:
-    from urlparse import urlparse, urljoin
-
 from portal import app
 
 
@@ -35,28 +30,6 @@ def csrf_valid():
     token = session.get('_csrf_token')
     supplied = request.form.get('_csrf_token', '')
     return bool(token) and hmac.compare_digest(token, supplied)
-
-
-def is_safe_redirect_url(target):
-    """https://security.openstack.org/guidelines/dg_avoid-unvalidated-redirects.html"""  # noqa
-    host_url = urlparse(request.host_url)
-    redirect_url = urlparse(urljoin(request.host_url, target))
-
-    return redirect_url.scheme in ('http', 'https') and \
-        host_url.netloc == redirect_url.netloc
-
-
-def get_safe_redirect():
-    """https://security.openstack.org/guidelines/dg_avoid-unvalidated-redirects.html"""  # noqa
-    url = request.args.get('next')
-    if url and is_safe_redirect_url(url):
-        return url
-
-    url = request.referrer
-    if url and is_safe_redirect_url(url):
-        return url
-
-    return '/'
 
 
 def get_portal_tokens(
