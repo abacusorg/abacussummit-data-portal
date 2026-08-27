@@ -1,0 +1,8 @@
+# Secrets and runtime state are supplied at deploy time (env vars or volume
+# mounts, see web/docker-entrypoint.sh); they must never enter the image.
+web/portal/secrets
+web/portal/ssl
+web/portal/data
+
+.git
+err.txt

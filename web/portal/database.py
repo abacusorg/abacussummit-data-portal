@@ -23,9 +23,26 @@ class Database:
             if db is not None:
                 db.close()
 
+    SCHEMA = """
+        create table if not exists profile (
+            id integer primary key autoincrement,
+            identity_id text not null,
+            name text not null,
+            email text not null,
+            institution text
+        );
+        create table if not exists pending_form (
+            key text primary key,
+            created integer,
+            form text
+        );
+    """
+
     def connect_to_db(self):
         """Open database and return a connection handle."""
-        return sqlite3.connect(self.app.config['DATABASE'])
+        db = sqlite3.connect(self.app.config['DATABASE'])
+        db.executescript(self.SCHEMA)
+        return db
 
     def get_db(self):
         """Return the app global db connection or create one."""
@@ -71,8 +88,6 @@ class Database:
         """
         db = self.get_db()
 
-        db.execute("""create table if not exists pending_form
-                   (key text primary key, created integer, form text)""")
         db.execute("delete from pending_form where created < ?",
                    (int(time.time()) - 86400,))
 
