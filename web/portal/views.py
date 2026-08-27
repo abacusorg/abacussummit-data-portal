@@ -6,7 +6,7 @@ from globus_sdk import (RefreshTokenAuthorizer, TransferAPIError,
 
 from portal import app, database, datasets, dataset_desc
 from portal.decorators import authenticated
-from portal.utils import get_safe_redirect, load_portal_client
+from portal.utils import csrf_valid, get_safe_redirect, load_portal_client
 
 try:
     from urllib.parse import urlencode
@@ -100,6 +100,9 @@ def profile():
 
         return render_template('profile.jinja2')
     elif request.method == 'POST':
+        if not csrf_valid():
+            abort(400)
+
         name = session['name'] = request.form['name']
         email = session['email'] = request.form['email']
         institution = session['institution'] = request.form['institution']
@@ -279,6 +282,9 @@ def transfer():
                               )
 
     if request.method == 'POST':
+        if not csrf_valid():
+            abort(400)
+
         keys = 'redshifts[]', 'products[]', 'simids[]'
         for k in keys:
             if not request.form.getlist(k):
@@ -410,6 +416,12 @@ def submit_transfer():
     - Send the user to the transfer status page with the task id
       from the transfer.
     """
+    # This POST is cross-site by design (the Globus Browse Endpoint helper
+    # page), so it cannot carry our CSRF token; only accept it from Globus.
+    origin = request.headers.get('Origin')
+    if origin and origin != 'https://app.globus.org':
+        abort(403)
+
     browse_endpoint_form = request.form
 
     transfer_tokens = session['tokens']['transfer.api.globus.org']

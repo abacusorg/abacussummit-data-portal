@@ -1,4 +1,5 @@
 from flask import Flask
+from flask_session import Session
 import json
 
 from portal.database import Database
@@ -12,7 +13,16 @@ app.config['TEMPLATES_AUTO_RELOAD'] = True
 # .jinja2 templates; force it on so untrusted values are escaped by default.
 app.jinja_env.autoescape = True
 
+Session(app)
+
 database = Database(app)
+
+
+@app.after_request
+def set_security_headers(response):
+    response.headers.setdefault('X-Content-Type-Options', 'nosniff')
+    response.headers.setdefault('X-Frame-Options', 'SAMEORIGIN')
+    return response
 
 with open(app.config['PORTAL_ROOT'] + app.config['DATASETS']) as f:
     datasets = json.load(f)
@@ -20,3 +30,6 @@ with open(app.config['PORTAL_ROOT'] + app.config['DESCRIPTIONS']) as f:
     dataset_desc = json.load(f)
 
 import portal.views
+
+from portal.utils import generate_csrf_token
+app.jinja_env.globals['csrf_token'] = generate_csrf_token

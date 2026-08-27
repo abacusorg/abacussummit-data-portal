@@ -1,5 +1,8 @@
-from flask import request
+import hmac
+import secrets
 from threading import Lock
+
+from flask import request, session
 
 import globus_sdk
 
@@ -15,6 +18,23 @@ def load_portal_client():
     """Create an AuthClient for the portal"""
     return globus_sdk.ConfidentialAppAuthClient(
         app.config['PORTAL_CLIENT_ID'], app.config['PORTAL_CLIENT_SECRET'])
+
+
+def generate_csrf_token():
+    """Return the session's CSRF token, creating it if needed.
+
+    Registered as the `csrf_token()` Jinja global for use in form templates.
+    """
+    if '_csrf_token' not in session:
+        session['_csrf_token'] = secrets.token_urlsafe(32)
+    return session['_csrf_token']
+
+
+def csrf_valid():
+    """Check the submitted form's CSRF token against the session's."""
+    token = session.get('_csrf_token')
+    supplied = request.form.get('_csrf_token', '')
+    return bool(token) and hmac.compare_digest(token, supplied)
 
 
 def is_safe_redirect_url(target):

@@ -1,2 +1,4 @@
 Flask>=2.3.2,~=2.3.2
+Flask-Session==0.5.0
+cachelib~=0.10.2
 globus-sdk~=2.0.1
