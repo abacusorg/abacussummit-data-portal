@@ -62,7 +62,7 @@
             <!-- Change the condition below to an actual test -->
             {%if session.get('is_authenticated')%}
               <li>
-                <form action="{{url_for('logout')}}" method="post" class="navbar-form">
+                <form action="{{url_for('logout')}}" method="post">
                   <input type="hidden" name="_csrf_token" value="{{csrf_token()}}">
                   <button type="submit" class="btn btn-link">Logout</button>
                 </form>

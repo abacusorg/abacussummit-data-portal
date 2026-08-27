@@ -100,11 +100,29 @@ select {
   pointer-events: none;
 }
 
-.navbar-custom .nav li a, .navbar-custom .nav li.divider {
+.navbar-custom .nav li a, .navbar-custom .nav li.divider,
+.navbar-custom .nav li .btn-link {
   text-transform: uppercase;
   font-size: 12px;
   font-weight: 800;
   letter-spacing: 1px;
+}
+
+/* the logout button is styled to match the surrounding nav links */
+.navbar-custom .nav li form {
+  margin: 0;
+}
+
+.navbar-custom .nav li .btn-link {
+  color: #777;
+  display: block;
+  border: 0;
+  padding: 10px 15px;
+}
+
+.navbar-custom .nav li .btn-link:hover,
+.navbar-custom .nav li .btn-link:focus {
+  text-decoration: none;
 }
 
 @media only screen and (min-width: 768px) {
@@ -123,14 +141,21 @@ select {
     color: rgba(255, 255, 255, 0.8);
   }
 
-  .navbar-custom .nav li a, .navbar-custom .nav li.divider {
+  .navbar-custom .nav li a, .navbar-custom .nav li.divider,
+  .navbar-custom .nav li .btn-link {
     color: white;
     padding: 20px 8px 20px 8px;
   }
 
   .navbar-custom .nav li a:hover,
-  .navbar-custom .nav li a:focus {
+  .navbar-custom .nav li a:focus,
+  .navbar-custom .nav li .btn-link:hover,
+  .navbar-custom .nav li .btn-link:focus {
     color: rgba(255, 255, 255, 0.8);
+  }
+
+  .navbar-custom .navbar-text {
+    color: white;
   }
 }
 
@@ -169,13 +194,20 @@ select {
     color: #0085a1;
   }
 
-  .navbar-custom.is-fixed .nav li a {
+  .navbar-custom.is-fixed .nav li a,
+  .navbar-custom.is-fixed .nav li .btn-link {
     color: #404040;
   }
 
   .navbar-custom.is-fixed .nav li a:hover,
-  .navbar-custom.is-fixed .nav li a:focus {
+  .navbar-custom.is-fixed .nav li a:focus,
+  .navbar-custom.is-fixed .nav li .btn-link:hover,
+  .navbar-custom.is-fixed .nav li .btn-link:focus {
     color: #0085a1;
+  }
+
+  .navbar-custom.is-fixed .navbar-text {
+    color: #404040;
   }
 
   .navbar-custom.is-visible {
