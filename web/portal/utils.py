@@ -32,6 +32,38 @@ def csrf_valid():
     return bool(token) and hmac.compare_digest(token, supplied)
 
 
+def begin_oauth_flow(consent_for_transfer=False):
+    """Record a fresh OAuth state nonce in the session and return it.
+
+    The nonce is what ties the redirect back from Globus Auth to the browser
+    session that started the flow; without one, anyone can replay an auth code
+    for their own identity into another user's session.
+    """
+    state = secrets.token_urlsafe(32)
+    session['_oauth_flow'] = {
+        'state': state,
+        'consent_for_transfer': consent_for_transfer,
+    }
+    return state
+
+
+def finish_oauth_flow():
+    """Consume the pending OAuth flow, returning it only if `state` matches.
+
+    Returns None when no flow is in progress or the callback's state does not
+    match it. The pending flow is dropped either way, so a callback URL is
+    single-use.
+    """
+    flow = session.pop('_oauth_flow', None)
+    if flow is None:
+        return None
+    supplied = request.args.get('state', '')
+    # compare as bytes; compare_digest raises on non-ASCII str
+    if not hmac.compare_digest(flow['state'].encode(), supplied.encode()):
+        return None
+    return flow
+
+
 def get_portal_tokens(
         scopes=['openid', 'urn:globus:auth:scope:demo-resource-server:all']):
     """

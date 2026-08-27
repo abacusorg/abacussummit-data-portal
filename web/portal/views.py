@@ -6,7 +6,8 @@ from globus_sdk import (RefreshTokenAuthorizer, TransferAPIError,
 
 from portal import app, datasets, dataset_desc
 from portal.decorators import authenticated
-from portal.utils import csrf_valid, load_portal_client
+from portal.utils import (begin_oauth_flow, csrf_valid, finish_oauth_flow,
+                          load_portal_client)
 
 try:
     from urllib.parse import urlencode
@@ -94,15 +95,17 @@ def authcallback():
     )
 
     client = load_portal_client()
-    client.oauth2_start_flow(
-        redirect_uri,
-        refresh_tokens=True,
-        requested_scopes=app.config['USER_SCOPES']
-    )
 
     # If there's no "code" query string parameter, we're in this route
     # starting a Globus Auth login flow.
     if 'code' not in request.args:
+        client.oauth2_start_flow(
+            redirect_uri,
+            refresh_tokens=True,
+            requested_scopes=app.config['USER_SCOPES'],
+            state=begin_oauth_flow(),
+        )
+
         additional_authorize_params = (
             {'signup': 1} if request.args.get('signup') else {})
 
@@ -110,28 +113,41 @@ def authcallback():
             query_params=additional_authorize_params)
 
         return redirect(auth_uri)
-    else:
-        # If we do have a "code" param, we're coming back from Globus Auth
-        # and can start the process of exchanging an auth code for a token.
-        code = request.args.get('code')
-        tokens = client.oauth2_exchange_code_for_tokens(code)
 
-        id_token = tokens.decode_id_token()
-        session.update(
-            tokens=tokens.by_resource_server,
-            is_authenticated=True,
-            name=id_token.get('name', ''),
-            email=id_token.get('email', ''),
-            institution=id_token.get('organization', ''),
-            primary_username=id_token.get('preferred_username'),
-            primary_identity=id_token.get('sub'),
-        )
+    # We do have a "code" param, so we're coming back from Globus Auth.
+    # Match the state nonce before exchanging anything: a code that isn't tied
+    # to a flow this session started may belong to someone else, and
+    # exchanging it would authenticate this session as them.
+    flow = finish_oauth_flow()
+    if flow is None:
+        flash('Your login could not be verified, or it expired before you'
+              ' finished. Please log in again.')
+        return redirect(url_for('home'))
 
-        state = request.args.get('state')
-        if state == '_inflight_transfer_consent':
-            return redirect(url_for('process_inflight_transfer'))
+    client.oauth2_start_flow(
+        redirect_uri,
+        refresh_tokens=True,
+        requested_scopes=app.config['USER_SCOPES']
+    )
 
-        return redirect(url_for('transfer'))
+    code = request.args.get('code')
+    tokens = client.oauth2_exchange_code_for_tokens(code)
+
+    id_token = tokens.decode_id_token()
+    session.update(
+        tokens=tokens.by_resource_server,
+        is_authenticated=True,
+        name=id_token.get('name', ''),
+        email=id_token.get('email', ''),
+        institution=id_token.get('organization', ''),
+        primary_username=id_token.get('preferred_username'),
+        primary_identity=id_token.get('sub'),
+    )
+
+    if flow['consent_for_transfer']:
+        return redirect(url_for('process_inflight_transfer'))
+
+    return redirect(url_for('transfer'))
 
 
 @app.route('/browse/dataset/<dataset_id>', methods=['GET'])
@@ -414,7 +430,7 @@ def submit_transfer():
                 redirect_uri,
                 refresh_tokens=True,
                 requested_scopes=scopes,
-                state="_inflight_transfer_consent"
+                state=begin_oauth_flow(consent_for_transfer=True),
             )
             auth_uri = client.oauth2_get_authorize_url()
             return redirect(auth_uri)
