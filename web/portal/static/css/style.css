@@ -108,6 +108,10 @@ select {
   letter-spacing: 1px;
 }
 
+.navbar-custom .navbar-text {
+  font-weight: 600;
+}
+
 /* the logout button is styled to match the surrounding nav links */
 .navbar-custom .nav li form {
   margin: 0;
