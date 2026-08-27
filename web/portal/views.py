@@ -7,7 +7,8 @@ from globus_sdk import (GlobusAPIError, RefreshTokenAuthorizer,
 from portal import app, datasets, dataset_desc
 from portal.decorators import authenticated
 from portal.utils import (begin_oauth_flow, csrf_valid, finish_oauth_flow,
-                          load_portal_client, safe_next_url)
+                          generate_transfer_token, load_portal_client,
+                          safe_next_url, transfer_token_valid)
 
 try:
     from urllib.parse import urlencode
@@ -264,7 +265,8 @@ def transfer():
         params = {
             'method': 'POST',
             'action': url_for('submit_transfer', _external=True,
-                              _scheme='https'),
+                              _scheme='https',
+                              token=generate_transfer_token()),
             # user must select a folder dest
             'filelimit': 0,
             'folderlimit': 1
@@ -396,10 +398,11 @@ def submit_transfer():
       from the transfer.
     """
     # This POST is cross-site by design (the Globus Browse Endpoint helper
-    # page), so it cannot carry our CSRF token; only accept it from Globus.
-    # Browsers always send Origin on cross-site POSTs, so a missing header
-    # means the request did not come from the helper page.
-    if request.headers.get('Origin') != 'https://app.globus.org':
+    # page), so the form cannot carry our CSRF token; instead, validate the
+    # single-purpose token embedded in the action URL we handed to Globus.
+    # The Origin header is no substitute: browsers send "null" or omit it on
+    # this POST depending on the sender's referrer policy.
+    if not transfer_token_valid():
         abort(403)
 
     browse_endpoint_form = request.form

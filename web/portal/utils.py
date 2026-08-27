@@ -34,6 +34,27 @@ def csrf_valid():
                                                supplied.encode())
 
 
+def generate_transfer_token():
+    """Mint the token that authenticates the transfer submission POST.
+
+    The Globus helper page POSTs back to us cross-site, so the form cannot
+    carry our CSRF token; instead this single-purpose token rides in the
+    action URL we hand to Globus.
+    """
+    token = secrets.token_urlsafe(32)
+    session['_transfer_token'] = token
+    return token
+
+
+def transfer_token_valid():
+    """Check the transfer submission's URL token against the session's."""
+    token = session.get('_transfer_token')
+    supplied = request.args.get('token', '')
+    # compare as bytes; compare_digest raises on non-ASCII str
+    return bool(token) and hmac.compare_digest(token.encode(),
+                                               supplied.encode())
+
+
 def safe_next_url(url):
     """Reduce a post-login destination to a same-site relative URL.
 
