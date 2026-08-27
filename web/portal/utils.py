@@ -1,6 +1,6 @@
 import hmac
 import secrets
-from threading import Lock
+from urllib.parse import urlsplit, urlunsplit
 
 from flask import request, session
 
@@ -29,10 +29,31 @@ def csrf_valid():
     """Check the submitted form's CSRF token against the session's."""
     token = session.get('_csrf_token')
     supplied = request.form.get('_csrf_token', '')
-    return bool(token) and hmac.compare_digest(token, supplied)
+    # compare as bytes; compare_digest raises on non-ASCII str
+    return bool(token) and hmac.compare_digest(token.encode(),
+                                               supplied.encode())
 
 
-def begin_oauth_flow(consent_for_transfer=False):
+def safe_next_url(url):
+    """Reduce a post-login destination to a same-site relative URL.
+
+    Returns None if `url` is empty or points off-site, so callers can fall
+    back to a default. Guards against open redirects: the result never
+    carries a scheme or host, and backslashes are rejected because browsers
+    treat them as slashes (so '/\\evil.com' would become protocol-relative).
+    """
+    if not url or '\\' in url:
+        return None
+    split = urlsplit(url)
+    if split.netloc and split.netloc != request.host:
+        return None
+    # require a single leading slash: '//host' is protocol-relative
+    if not split.path.startswith('/') or split.path.startswith('//'):
+        return None
+    return urlunsplit(('', '', split.path, split.query, ''))
+
+
+def begin_oauth_flow(consent_for_transfer=False, next_url=None):
     """Record a fresh OAuth state nonce in the session and return it.
 
     The nonce is what ties the redirect back from Globus Auth to the browser
@@ -43,6 +64,7 @@ def begin_oauth_flow(consent_for_transfer=False):
     session['_oauth_flow'] = {
         'state': state,
         'consent_for_transfer': consent_for_transfer,
+        'next_url': next_url,
     }
     return state
 
@@ -64,36 +86,3 @@ def finish_oauth_flow():
     return flow
 
 
-def get_portal_tokens(
-        scopes=['openid', 'urn:globus:auth:scope:demo-resource-server:all']):
-    """
-    Uses the client_credentials grant to get access tokens on the
-    Portal's "client identity."
-    """
-    with get_portal_tokens.lock:
-        if not get_portal_tokens.access_tokens:
-            get_portal_tokens.access_tokens = {}
-
-        scope_string = ' '.join(scopes)
-
-        client = load_portal_client()
-        tokens = client.oauth2_client_credentials_tokens(
-            requested_scopes=scope_string)
-
-        # walk all resource servers in the token response (includes the
-        # top-level server, as found in tokens.resource_server), and store the
-        # relevant Access Tokens
-        for resource_server, token_info in tokens.by_resource_server.items():
-            get_portal_tokens.access_tokens.update({
-                resource_server: {
-                    'token': token_info['access_token'],
-                    'scope': token_info['scope'],
-                    'expires_at': token_info['expires_at_seconds']
-                }
-            })
-
-        return get_portal_tokens.access_tokens
-
-
-get_portal_tokens.lock = Lock()
-get_portal_tokens.access_tokens = None

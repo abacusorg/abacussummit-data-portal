@@ -1,13 +1,13 @@
 from flask import (abort, flash, redirect, render_template, request, session,
                    url_for)
 from markupsafe import Markup
-from globus_sdk import (RefreshTokenAuthorizer, TransferAPIError,
-                        TransferClient, TransferData)
+from globus_sdk import (GlobusAPIError, RefreshTokenAuthorizer,
+                        TransferAPIError, TransferClient, TransferData)
 
 from portal import app, datasets, dataset_desc
 from portal.decorators import authenticated
 from portal.utils import (begin_oauth_flow, csrf_valid, finish_oauth_flow,
-                          load_portal_client)
+                          load_portal_client, safe_next_url)
 
 try:
     from urllib.parse import urlencode
@@ -32,7 +32,7 @@ def signup():
 @app.route('/login', methods=['GET'])
 def login():
     """Send the user to Globus Auth."""
-    return redirect(url_for('authcallback'))
+    return redirect(url_for('authcallback', next=request.args.get('next')))
 
 
 @app.route('/about', methods=['GET'])
@@ -41,14 +41,20 @@ def about():
     return render_template('about.jinja2')
 
 
-@app.route('/logout', methods=['GET'])
+@app.route('/logout', methods=['POST'])
 @authenticated
 def logout():
     """
     - Revoke the tokens with Globus Auth.
     - Destroy the session state.
     - Redirect the user to the Globus Auth logout page.
+
+    POST + CSRF token, so that a cross-site request cannot revoke the
+    user's tokens.
     """
+    if not csrf_valid():
+        abort(400)
+
     client = load_portal_client()
 
     # Revoke the tokens with Globus Auth
@@ -103,7 +109,8 @@ def authcallback():
             redirect_uri,
             refresh_tokens=True,
             requested_scopes=app.config['USER_SCOPES'],
-            state=begin_oauth_flow(),
+            state=begin_oauth_flow(
+                next_url=safe_next_url(request.args.get('next'))),
         )
 
         additional_authorize_params = (
@@ -131,7 +138,12 @@ def authcallback():
     )
 
     code = request.args.get('code')
-    tokens = client.oauth2_exchange_code_for_tokens(code)
+    try:
+        tokens = client.oauth2_exchange_code_for_tokens(code)
+    except GlobusAPIError:
+        # e.g. an expired auth code
+        flash('Login with Globus Auth failed. Please try again.')
+        return redirect(url_for('home'))
 
     id_token = tokens.decode_id_token()
     session.update(
@@ -147,7 +159,7 @@ def authcallback():
     if flow['consent_for_transfer']:
         return redirect(url_for('process_inflight_transfer'))
 
-    return redirect(url_for('transfer'))
+    return redirect(flow.get('next_url') or url_for('transfer'))
 
 
 @app.route('/browse/dataset/<dataset_id>', methods=['GET'])
@@ -175,12 +187,13 @@ def browse(dataset_id=None, endpoint_id=None, endpoint_path=None):
 
     if dataset_id:
         try:
-            dataset = next(ds for ds in datasets if ds['id'] == dataset_id)
+            dataset = next(ds for ds in datasets['data']
+                           if str(ds['id']) == dataset_id)
         except StopIteration:
             abort(404)
 
         endpoint_id = app.config['DATASET_ENDPOINT_ID']
-        endpoint_path = app.config['DATASET_ENDPOINT_BASE'] + dataset['path']
+        endpoint_path = app.config['DATASET_ENDPOINT_BASE'] + dataset['root']
 
     else:
         endpoint_path = '/' + endpoint_path
@@ -283,17 +296,27 @@ def transfer_datasets(params):
     redshifts = form['redshifts[]']
     products  = form['products[]']
     simids    = form['simids[]']
-    
-    # simids is actually a singlet string, just to try to keep the POST small
-    simids = list(map(int, simids[0].split(',')))
-    simids = list(dict.fromkeys(simids))  # dedupe
+
+    try:
+        # the manifest keys redshifts by their form string (e.g. '0.1'), but
+        # the directory names need the zero-padded float (e.g. 'z0.100')
+        zstrs = {z: f'z{float(z):.3f}' for z in redshifts}
+
+        # simids is actually a singlet string, just to try to keep the POST small
+        simids = list(dict.fromkeys(int(s) for s in simids[0].split(',')))
+
+        # flatten products into deduped (category, ftype) pairs,
+        # e.g. [('halos','halo_info'), ('power','AB'), ('power','pack9')]
+        products = sum((p.strip(',').split(',') for p in products), [])
+        products = [p.split('.') for p in dict.fromkeys(products)]
+        if not all(len(p) == 2 for p in products):
+            raise ValueError
+    except ValueError:
+        flash('Your transfer selection could not be read; please select again.')
+        return redirect(url_for('transfer'))
+
     sims = [sim for sim in datasets['data'] if sim['id'] in simids]
-    
-    # flatten products
-    products = sum((p.strip(',').split(',') for p in products), [])
-    products = list(dict.fromkeys(products))  # dedupe
-    products = [ p.split('.') for p in products ]  # [ ('halos','halo_info'), ('power','AB'), ('power','pack9')]
-    
+
     transfer_tokens = session['tokens']['transfer.api.globus.org']
 
     authorizer = RefreshTokenAuthorizer(
@@ -307,7 +330,7 @@ def transfer_datasets(params):
     source_endpoint_id = app.config['DATASET_ENDPOINT_ID']
     source_endpoint_base = GlobusPath(app.config['DATASET_ENDPOINT_BASE'])
     destination_endpoint_id = params['destination_endpoint_id']
-    destination_folder = params.get('folder[0]')
+    destination_folder = params.get('destination_folder')
     dest_path_base = GlobusPath(params['destination_path'])
     if destination_folder:
         dest_path_base /= destination_folder
@@ -323,7 +346,7 @@ def transfer_datasets(params):
 
     for sim in sims:
         for z in redshifts:
-            zstr = f'z{float(z):.3f}'
+            zstr = zstrs[z]
             for category,ftype in products:
                 if category not in sim or z not in sim[category] or ftype not in sim[category][z]:
                     continue
@@ -332,8 +355,10 @@ def transfer_datasets(params):
                 source_path = source_endpoint_base / pathfmt.format(sim['root']) / zstr / ftype
                 dest_path = dest_path_base / pathfmt.format(sim['root']) / zstr / ftype
 
-                transfer_data.add_item(source_path=source_path,
-                                       destination_path=dest_path,
+                # globus-sdk serializes the payload with json.dumps, which
+                # cannot encode path objects
+                transfer_data.add_item(source_path=str(source_path),
+                                       destination_path=str(dest_path),
                                        recursive=True)
 
     try:
@@ -372,8 +397,9 @@ def submit_transfer():
     """
     # This POST is cross-site by design (the Globus Browse Endpoint helper
     # page), so it cannot carry our CSRF token; only accept it from Globus.
-    origin = request.headers.get('Origin')
-    if origin and origin != 'https://app.globus.org':
+    # Browsers always send Origin on cross-site POSTs, so a missing header
+    # means the request did not come from the helper page.
+    if request.headers.get('Origin') != 'https://app.globus.org':
         abort(403)
 
     browse_endpoint_form = request.form
@@ -400,18 +426,22 @@ def submit_transfer():
     destination = transfer.get_endpoint(transfer_params['destination_endpoint_id'])
 
     try:
-        [major, minor, _patch] = destination['gcs_version'].split('.')
-    except:  # noqa: E722
-        major = 0
-        minor = 0
+        major, minor = (int(x) for x in
+                        destination['gcs_version'].split('.')[:2])
+    except (KeyError, AttributeError, ValueError):
+        major, minor = 0, 0
 
-    is_share = 0
-    is_non_ha_mapped = not destination['high_assurance'] and (
-        int(major) >= 5
-        and int(minor) >= 4
-    ) and not destination['non_functional'] and not is_share
+    # Only mapped collections on GCS >= 5.4 gate transfers behind a
+    # data_access scope; guest collections and GCP endpoints have no such
+    # scope, and requesting it for them fails at Globus Auth.
+    needs_data_access = (
+        destination.get('entity_type') == 'GCSv5_mapped_collection'
+        and not destination['high_assurance']
+        and (major, minor) >= (5, 4)
+        and not destination['non_functional']
+    )
 
-    if is_non_ha_mapped:
+    if needs_data_access:
         data_access_scope = "https://auth.globus.org/scopes/" + destination["id"] + "/data_access"
         # Consenting to a collection's data_access scope yields a token whose
         # resource server is the collection UUID, so its presence in the

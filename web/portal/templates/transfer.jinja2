@@ -46,7 +46,7 @@
                         {%for desc,ftypes in products.items()%}
                             <li>
                                 <div class='checkbox'>
-                                    <input type="checkbox" name="products[]" value={{ftypes|join(',')}}, id="ck-{{loop.index}}">
+                                    <input type="checkbox" name="products[]" value="{{ftypes|join(',')}}" id="ck-{{loop.index}}">
                                     <label for="ck-{{loop.index}}">{{desc}}</label>
                                 </div>
                             </li>
