@@ -51,16 +51,15 @@ def logout():
     client = load_portal_client()
 
     # Revoke the tokens with Globus Auth
-    for token, token_type in (
-            (token_info[ty], ty)
+    for token in (
+            token_info[ty]
             # get all of the token info dicts
             for token_info in session['tokens'].values()
             # cross product with the set of token types
             for ty in ('access_token', 'refresh_token')
             # only where the relevant token is actually present
             if token_info[ty] is not None):
-        client.oauth2_revoke_token(
-            token, additional_params={'token_type_hint': token_type})
+        client.oauth2_revoke_token(token)
 
     # Destroy the session state
     session.clear()
@@ -108,7 +107,7 @@ def authcallback():
             {'signup': 1} if request.args.get('signup') else {})
 
         auth_uri = client.oauth2_get_authorize_url(
-            additional_params=additional_authorize_params)
+            query_params=additional_authorize_params)
 
         return redirect(auth_uri)
     else:
@@ -117,7 +116,7 @@ def authcallback():
         code = request.args.get('code')
         tokens = client.oauth2_exchange_code_for_tokens(code)
 
-        id_token = tokens.decode_id_token(client)
+        id_token = tokens.decode_id_token()
         session.update(
             tokens=tokens.by_resource_server,
             is_authenticated=True,
@@ -181,7 +180,6 @@ def browse(dataset_id=None, endpoint_id=None, endpoint_path=None):
     transfer = TransferClient(authorizer=authorizer)
 
     try:
-        transfer.endpoint_autoactivate(endpoint_id)
         listing = transfer.operation_ls(endpoint_id, path=endpoint_path)
     except TransferAPIError as err:
         flash('Error [{}]: {}'.format(err.code, err.message))
@@ -300,8 +298,7 @@ def transfer_datasets(params):
 
     label = params.get('label') or None
 
-    transfer_data = TransferData(transfer_client=transfer,
-                                 source_endpoint=source_endpoint_id,
+    transfer_data = TransferData(source_endpoint=source_endpoint_id,
                                  destination_endpoint=destination_endpoint_id,
                                  label=label,
                                  encrypt_data=False,verify_checksum=False,
@@ -324,8 +321,6 @@ def transfer_datasets(params):
                                        recursive=True)
 
     try:
-        transfer.endpoint_autoactivate(source_endpoint_id)
-        transfer.endpoint_autoactivate(destination_endpoint_id)
         task_id = transfer.submit_transfer(transfer_data)['task_id']
     except TransferAPIError as err:
         flash('Error [{}]: {}'.format(err.code, err.message))

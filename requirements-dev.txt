@@ -1,5 +1,2 @@
-abacusutils>=1.0
-flake8==3.7.9
+flake8
 tqdm
-globus_sdk
-fair_research_login
